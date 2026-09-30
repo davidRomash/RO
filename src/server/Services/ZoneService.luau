@@ -62,9 +62,9 @@ function ZoneService.GoTo(player: Player, target: string): Net.Result
 	if now - (lastMove[player] or 0) < 1.5 then
 		return { Ok = false }
 	end
-	lastMove[player] = now
 
 	if target == "Plaza" then
+		lastMove[player] = now
 		Teleport.To(player, Layout.PlazaSpawn, "Plaza")
 		return { Ok = true }
 	elseif target == "Base" then
@@ -72,6 +72,7 @@ function ZoneService.GoTo(player: Player, target: string): Net.Result
 		if not spawn then
 			return { Ok = false, Message = "No base plot is free on this server" }
 		end
+		lastMove[player] = now
 		Teleport.To(player, spawn.Position, "Plaza", spawn.LookVector)
 		return { Ok = true }
 	end
@@ -83,6 +84,7 @@ function ZoneService.GoTo(player: Player, target: string): Net.Result
 	if not data.UnlockedZones[target] then
 		return { Ok = false, Message = `Unlock {zone.Name} for 🪙 {Util.FormatNumber(zone.GateCost)}` }
 	end
+	lastMove[player] = now
 	Teleport.To(player, Layout.ZoneSpawn(target), target, Vector3.new(1, 0, 0))
 	TutorialService.OnEnterZone(player, target)
 	return { Ok = true }
@@ -126,7 +128,12 @@ function ZoneService.Start()
 		local zoneId = gate:GetAttribute("Zone") :: string
 		local gatePart = gate :: BasePart
 		gatePart.Touched:Connect(function(hit)
-			onGateTouched(hit, zoneId)
+			-- Locked gates are opened with their Unlock prompt instead.
+			local player = playerFromHit(hit)
+			local data = player and DataService.Get(player)
+			if data and data.UnlockedZones[zoneId] then
+				onGateTouched(hit, zoneId)
+			end
 		end)
 	end
 	for _, gate in CollectionService:GetTagged("ReturnGate") do

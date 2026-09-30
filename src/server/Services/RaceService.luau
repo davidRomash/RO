@@ -25,7 +25,7 @@ local MAX_RACERS = 8
 local MAX_SPEED_FACTOR = 3 -- anti-cheat: nobody can cover a stretch faster than this x their speed
 local DEFAULT_JUMP = 50
 local BOT_NAMES = { "Zippy", "Dash", "Bolt", "Flash", "Turbo", "Sprout", "Blaze", "Comet", "Pip", "Nibbles" }
-local TUTORIAL_BOT_PACE = { 0.93, 0.8, 0.74 } -- first race: the player should finish 1st or 2nd
+local TUTORIAL_BOT_PACE = { 0.78, 0.68, 0.62 } -- first race: the new player should win
 
 type Racer = {
 	Player: Player?,
@@ -48,6 +48,7 @@ type Racer = {
 	SlowUntil: number,
 	ShieldUsed: boolean,
 	LogHits: { [Instance]: boolean },
+	FirstRace: boolean,
 	Race: Race,
 }
 
@@ -114,6 +115,7 @@ local function newRacer(race: Race, name: string, speed: number): Racer
 		SlowUntil = 0,
 		ShieldUsed = false,
 		LogHits = {},
+		FirstRace = false,
 		Race = race,
 	}
 end
@@ -150,6 +152,17 @@ local function resetHumanoid(humanoid: Humanoid?)
 	if humanoid and humanoid.Parent then
 		humanoid.WalkSpeed = RACE.BaseWalkSpeed
 		humanoid.JumpPower = DEFAULT_JUMP
+	end
+end
+
+-- Frees a player from their race (finished, left or disqualified) so they can move on right away.
+-- Guarded so an old race never releases a player who has already joined a newer one.
+local function release(racer: Racer)
+	local player = racer.Player
+	if player and racerByPlayer[player] == racer then
+		racerByPlayer[player] = nil
+		player:SetAttribute("Racing", nil)
+		resetHumanoid(racer.Humanoid)
 	end
 end
 
@@ -249,6 +262,7 @@ local function updateHuman(racer: Racer, origin: Vector3, elapsed: number, now: 
 	local root = character and character.PrimaryPart
 	if player.Parent ~= Players or character ~= racer.Character or not root or not humanoid or humanoid.Health <= 0 then
 		racer.Left = true
+		release(racer)
 		return
 	end
 
@@ -264,7 +278,7 @@ local function updateHuman(racer: Racer, origin: Vector3, elapsed: number, now: 
 		if elapsed - previous < stretch / (racer.Speed * MAX_SPEED_FACTOR) then
 			racer.Disqualified = true
 			racer.Left = true
-			resetHumanoid(humanoid)
+			release(racer)
 			Net.Notify(player, "Race not counted: you moved too fast!", "Error")
 			return
 		end
@@ -274,7 +288,7 @@ local function updateHuman(racer: Racer, origin: Vector3, elapsed: number, now: 
 			racer.Finished = true
 			racer.FinishTime = elapsed
 			racer.Distance = track.Length
-			resetHumanoid(humanoid)
+			release(racer)
 			Net.Fire("RaceEvent", player, "Finished", { Place = placeOf(racer.Race, racer), Time = elapsed })
 			return
 		end
@@ -307,9 +321,7 @@ local function finishRace(race: Race)
 		if not player then
 			continue
 		end
-		racerByPlayer[player] = nil
-		player:SetAttribute("Racing", nil)
-		resetHumanoid(racer.Humanoid)
+		release(racer)
 		local data = DataService.Get(player)
 		if racer.Disqualified or not data or player.Parent ~= Players then
 			continue
@@ -319,6 +331,9 @@ local function finishRace(race: Race)
 		if racer.Finished or #racer.CheckpointTimes > 0 then
 			local share = Economy.PlacePayout[math.min(place, #Economy.PlacePayout)]
 			earned = math.floor(zone.Purse * share * (1 + (racer.Abilities.CoinBonus or 0)))
+			if racer.FirstRace then
+				earned = math.max(earned, zone.Purse) -- the first race always pays enough for the first egg
+			end
 		end
 		data.Races += 1
 		if place == 1 and racer.Finished then
@@ -365,8 +380,8 @@ local function runRace(zoneId: string, players: { Player })
 	local origin = Layout.ZoneOrigins[zoneId]
 	local race: Race = { Zone = zoneId, Racers = {}, StartTime = 0 }
 
-	local tutorial = false
 	local totalSpeed = 0
+	local slowestNewPlayer = math.huge
 	for _, player in players do
 		if #race.Racers >= MAX_RACERS then
 			break
@@ -388,7 +403,8 @@ local function runRace(zoneId: string, players: { Player })
 		player:SetAttribute("Racing", true)
 		totalSpeed += racer.Speed
 		if TutorialService.IsFirstRace(player) then
-			tutorial = true
+			racer.FirstRace = true
+			slowestNewPlayer = math.min(slowestNewPlayer, racer.Speed)
 		end
 	end
 	local humanCount = #race.Racers
@@ -396,11 +412,13 @@ local function runRace(zoneId: string, players: { Player })
 		return
 	end
 
-	local averageSpeed = totalSpeed / humanCount
+	-- Bots match the players; when someone is on their first race they are tuned to that player.
+	local tutorial = slowestNewPlayer < math.huge
+	local baseSpeed = if tutorial then slowestNewPlayer else totalSpeed / humanCount
 	local botCount = if humanCount < 3 then math.max(0, RACE.MinLineup - humanCount) else 0
 	for i = 1, botCount do
-		local pace = if tutorial then TUTORIAL_BOT_PACE[i] or 0.7 else rng:NextNumber(0.8, 1.05)
-		table.insert(race.Racers, makeBot(race, averageSpeed * pace))
+		local pace = if tutorial then TUTORIAL_BOT_PACE[i] or 0.6 else rng:NextNumber(0.8, 1.05)
+		table.insert(race.Racers, makeBot(race, baseSpeed * pace))
 	end
 
 	-- Line everyone up across the start line.
@@ -518,11 +536,9 @@ local function zoneLoop(zoneId: string)
 		end)
 		if not ok then
 			warn(`[RaceService] race in {zoneId} failed: {err}`)
-			for player, racer in racerByPlayer do
+			for _, racer in racerByPlayer do
 				if racer.Race.Zone == zoneId then
-					racerByPlayer[player] = nil
-					player:SetAttribute("Racing", nil)
-					resetHumanoid(racer.Humanoid)
+					release(racer)
 				end
 			end
 		end

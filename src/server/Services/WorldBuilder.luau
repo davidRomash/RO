@@ -22,7 +22,14 @@ local WorldBuilder = {}
 local function part(parent: Instance, name: string, size: Vector3, cframe: CFrame, color: Color3, shape: Enum.PartType?, material: Enum.Material?): Part
 	local p = Instance.new("Part")
 	p.Name = name
-	p.Shape = shape or Enum.PartType.Block
+	-- Ball parts are always round, so stretched balls (eggs, leaves) use a sphere mesh instead.
+	local stretched = shape == Enum.PartType.Ball and (size.X ~= size.Y or size.Y ~= size.Z)
+	p.Shape = if stretched then Enum.PartType.Block else shape or Enum.PartType.Block
+	if stretched then
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.Sphere
+		mesh.Parent = p
+	end
 	p.Size = size
 	p.CFrame = cframe
 	p.Color = color
@@ -99,6 +106,7 @@ end
 local function arch(parent: Instance, name: string, position: Vector3, gateColor: Color3, facing: number): (Model, Part)
 	local model = Instance.new("Model")
 	model.Name = name
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic -- the gate and its sign arrive together
 	model.Parent = parent
 	local rot = CFrame.new(position) * CFrame.Angles(0, math.rad(facing), 0)
 	part(model, "PillarL", Vector3.new(3, 16, 3), rot * CFrame.new(-7, 8, 0), Color3.fromRGB(245, 245, 245))
@@ -347,6 +355,8 @@ local function buildZone(world: Instance, zoneId: string)
 		local banner = part(model, "Banner", Vector3.new(2, 4, W + 8), CFrame.new(origin + Vector3.new(d, 17, 0)), color)
 		local gui = Instance.new("SurfaceGui")
 		gui.Face = Enum.NormalId.Left
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 20
 		gui.LightInfluence = 0
 		gui.Parent = banner
 		label(gui, if isFinish then "🏁 FINISH 🏁" else `CHECKPOINT {i}`)

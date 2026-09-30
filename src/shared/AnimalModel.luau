@@ -13,7 +13,14 @@ local AnimalModel = {}
 local function part(model: Model, name: string, shape: Enum.PartType, size: Vector3, color: Color3, offset: CFrame, root: BasePart?): BasePart
 	local p = Instance.new("Part")
 	p.Name = name
-	p.Shape = shape
+	-- Ball parts are always round, so stretched balls (shell, tail) use a sphere mesh instead.
+	local stretched = shape == Enum.PartType.Ball and (size.X ~= size.Y or size.Y ~= size.Z)
+	p.Shape = if stretched then Enum.PartType.Block else shape
+	if stretched then
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.Sphere
+		mesh.Parent = p
+	end
 	p.Size = size
 	p.Color = color
 	p.Material = Enum.Material.SmoothPlastic

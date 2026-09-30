@@ -25,7 +25,7 @@ local selectedId: string? = nil
 -- Collection index: every animal, greyed out until discovered.
 local indexRow = UIKit.New("Frame", {
 	BackgroundColor3 = C.PanelDark,
-	Size = UDim2.new(1, 0, 0, 56),
+	Size = UDim2.new(1, -182, 0, 56),
 	Parent = content,
 }, {
 	UIKit.Corner(14),
@@ -37,16 +37,6 @@ local indexRow = UIKit.New("Frame", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
 	}),
 }) :: Frame
-
-local speedLabel = UIKit.Text({
-	Text = "",
-	Size = UDim2.fromOffset(300, 40),
-	Position = UDim2.new(1, -170, 0, -62),
-	AnchorPoint = Vector2.new(1, 0),
-	TextXAlignment = Enum.TextXAlignment.Right,
-	TextColor3 = C.Gold,
-	Parent = content,
-})
 
 local grid = UIKit.New("ScrollingFrame", {
 	BackgroundColor3 = C.PanelDark,
@@ -142,8 +132,8 @@ local sellButton = UIKit.Button({
 
 UIKit.Button({
 	Text = "⭐ Equip Best",
-	Size = UDim2.fromOffset(160, 48),
-	Position = UDim2.new(1, 0, 0, -60),
+	Size = UDim2.fromOffset(172, 56),
+	Position = UDim2.new(1, 0, 0, 0),
 	AnchorPoint = Vector2.new(1, 0),
 	Color = C.Blue,
 	Parent = content,
@@ -206,8 +196,8 @@ local function refreshDetail(state: any)
 end
 
 local function refresh(state: any)
-	window.Title.Text = `🐾 My Animals  {#state.Pets}/{state.InventorySize}`
-	speedLabel.Text = `Race speed: {math.floor(PetMath.RaceSpeed(PetMath.EquippedPets(state.Pets, state.Equipped)))}`
+	local speed = math.floor(PetMath.RaceSpeed(PetMath.EquippedPets(state.Pets, state.Equipped)))
+	window.Title.Text = `🐾 My Animals  {#state.Pets}/{state.InventorySize}   ⚡ Speed {speed}`
 
 	for _, child in indexRow:GetChildren() do
 		if child:IsA("TextLabel") then

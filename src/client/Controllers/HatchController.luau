@@ -112,8 +112,10 @@ local function play(payload: any)
 		}) :: Frame
 		local viewport = makeViewport(card)
 		local eggPart = Instance.new("Part")
-		eggPart.Shape = Enum.PartType.Ball
 		eggPart.Size = Vector3.new(4, 5.2, 4)
+		local eggMesh = Instance.new("SpecialMesh")
+		eggMesh.MeshType = Enum.MeshType.Sphere
+		eggMesh.Parent = eggPart
 		eggPart.Color = egg.Color
 		eggPart.CFrame = CFrame.new(0, 1, 0)
 		eggPart.Parent = viewport
