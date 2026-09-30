@@ -1,16 +1,87 @@
 {
-  "name": "RO",
+  "name": "AnimalRush",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Shared": { "$path": "src/shared" }
+      "Config": {
+        "$path": "src/config"
+      },
+      "Shared": {
+        "$path": "src/shared"
+      },
+      "Remotes": {
+        "$className": "Folder",
+        "StateChanged": {
+          "$className": "RemoteEvent"
+        },
+        "Notify": {
+          "$className": "RemoteEvent"
+        },
+        "CoinsAwarded": {
+          "$className": "RemoteEvent"
+        },
+        "HatchPlay": {
+          "$className": "RemoteEvent"
+        },
+        "RaceEvent": {
+          "$className": "RemoteEvent"
+        },
+        "AbilityFx": {
+          "$className": "RemoteEvent"
+        },
+        "OpenMenu": {
+          "$className": "RemoteEvent"
+        },
+        "HatchEgg": {
+          "$className": "RemoteFunction"
+        },
+        "EquipPet": {
+          "$className": "RemoteFunction"
+        },
+        "UnequipPet": {
+          "$className": "RemoteFunction"
+        },
+        "SellPet": {
+          "$className": "RemoteFunction"
+        },
+        "MergeGolden": {
+          "$className": "RemoteFunction"
+        },
+        "TeleportZone": {
+          "$className": "RemoteFunction"
+        },
+        "UnlockZone": {
+          "$className": "RemoteFunction"
+        },
+        "ClaimDaily": {
+          "$className": "RemoteFunction"
+        },
+        "UseAbility": {
+          "$className": "RemoteFunction"
+        },
+        "UpdateSetting": {
+          "$className": "RemoteFunction"
+        },
+        "EquipBest": {
+          "$className": "RemoteFunction"
+        }
+      }
     },
     "ServerScriptService": {
-      "Server": { "$path": "src/server" }
+      "Server": {
+        "$path": "src/server"
+      }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Client": { "$path": "src/client" }
+        "Client": {
+          "$path": "src/client"
+        }
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": true
       }
     }
   }
