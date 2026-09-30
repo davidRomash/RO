@@ -37,3 +37,10 @@ works, but data resets every session.
 
 `src/server/Packages/ProfileStore.luau` is [ProfileStore](https://github.com/MadStudioRoblox/ProfileStore)
 by loleris, Apache License 2.0 (see `licenses/ProfileStore-LICENSE`).
+
+## Admin commands
+
+Type in chat (only the game owner, people listed in `src/config/Admins.luau`, and anyone in Studio):
+`;help`, `;coins 1000`, `;setcoins 0`, `;pet shark golden`, `;unlock all`, `;tp beach`,
+`;speed 50`, `;base 3`, `;skiptutorial`, `;reset`. Add a player name at the end to target
+someone else, or `all` for everyone.

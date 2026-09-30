@@ -213,6 +213,33 @@ local function onPlayerAdded(player: Player)
 	end
 end
 
+local function deepCopy(value: any): any
+	if typeof(value) ~= "table" then
+		return value
+	end
+	local copy = {}
+	for key, inner in value do
+		copy[key] = deepCopy(inner)
+	end
+	return copy
+end
+
+-- Wipes a player's data back to a brand new save (admin command).
+function DataService.Reset(player: Player): boolean
+	local data = DataService.Get(player) :: any
+	if not data then
+		return false
+	end
+	for key in data do
+		data[key] = nil
+	end
+	for key, value in deepCopy(TEMPLATE) do
+		data[key] = value
+	end
+	DataService.Changed(player)
+	return true
+end
+
 local SETTING_KEYS = { FastHatch = true, ShowOtherPets = true }
 
 function DataService.Init()

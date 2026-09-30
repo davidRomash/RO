@@ -15,6 +15,7 @@ local ORDER = {
 	"RaceService",
 	"RewardService",
 	"LeaderboardService",
+	"AdminService",
 }
 
 local modules = {}
