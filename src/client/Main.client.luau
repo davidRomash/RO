@@ -16,6 +16,7 @@ local ORDER = {
 	"GuideController",
 	"PetFollowController",
 	"WorldController",
+	"AdminPanel",
 }
 
 local modules = {}

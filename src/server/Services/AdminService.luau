@@ -1,5 +1,5 @@
 --!strict
--- Admin chat commands. Type them in chat, starting with ";". Type ";help" for the list.
+-- Admin commands, run from the admin panel or typed in chat starting with ";" (";help" lists them).
 -- Targets: "me" (default), "all", or the start of a player's name.
 
 local Players = game:GetService("Players")
@@ -267,30 +267,44 @@ commands.help = {
 	end,
 }
 
-local function onChatted(player: Player, message: string)
-	if string.sub(message, 1, #PREFIX) ~= PREFIX or not isAdmin(player) then
-		return
+-- Runs one command line like "coins 1000 me". Returns (ok, message).
+local function runCommand(player: Player, line: string): (boolean, string)
+	if not isAdmin(player) then
+		return false, "Admins only"
 	end
-	local args = string.split(string.sub(message, #PREFIX + 1), " ")
-	local name = string.lower(table.remove(args, 1) or "")
+	local args = string.split(line, " ")
 	for i = #args, 1, -1 do
 		if args[i] == "" then
 			table.remove(args, i)
 		end
 	end
+	local name = string.lower(table.remove(args, 1) or "")
 	local command = commands[name]
 	if not command then
-		Net.Notify(player, `Unknown command ;{name}. Try ;help`, "Error")
-		return
+		return false, `Unknown command ;{name}. Try ;help`
 	end
 	local ok, result = pcall(command.Run, player, args)
-	Net.Notify(player, if ok then result else `Error: {result}`, if ok then "Success" else "Error")
+	return ok, if ok then result else `Error: {result}`
+end
+
+function AdminService.Init()
+	-- Used by the admin panel and by chat (the client forwards ";" messages here).
+	Net.OnInvoke("AdminCommand", 5, function(player, line)
+		if typeof(line) ~= "string" or #line > 200 then
+			return { Ok = false }
+		end
+		if string.sub(line, 1, #PREFIX) == PREFIX then
+			line = string.sub(line, #PREFIX + 1)
+		end
+		local ok, message = runCommand(player, line)
+		return { Ok = ok, Message = message }
+	end)
 end
 
 function AdminService.Start()
 	local function onPlayer(player: Player)
-		player.Chatted:Connect(function(message)
-			onChatted(player, message)
+		task.spawn(function()
+			player:SetAttribute("IsAdmin", isAdmin(player)) -- shows the admin panel button
 		end)
 	end
 	for _, player in Players:GetPlayers() do

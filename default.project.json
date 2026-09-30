@@ -64,6 +64,9 @@
         },
         "EquipBest": {
           "$className": "RemoteFunction"
+        },
+        "AdminCommand": {
+          "$className": "RemoteFunction"
         }
       }
     },
